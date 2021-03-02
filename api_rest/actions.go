@@ -32,6 +32,11 @@ func Index(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "hola desde el index")
 }
 
+type Message struct {
+	Status  string `json:"status"`
+	Message string `json:"message"`
+}
+
 func MovieList(w http.ResponseWriter, r *http.Request) {
 	var results []Movie
 	err := collection.Find(nil).Sort("-_id").All(&results)
@@ -103,6 +108,31 @@ func MovieShow(w http.ResponseWriter, r *http.Request) {
 	}
 	responseMovie(w, 200, results)
 
+}
+func MovieRemove(w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+	movie_id := params["id"]
+
+	if !bson.IsObjectIdHex(movie_id) {
+		w.WriteHeader(404)
+		return
+	}
+
+	old := bson.ObjectIdHex(movie_id)
+
+	err := collection.RemoveId(old)
+
+	if err != nil {
+		w.WriteHeader(404)
+		return
+	}
+
+	results := Message{"success", "la pelicula con " + movie_id + " ha sido borrada correctamente"}
+	w.Header().Set("content-type", "application/json")
+	w.WriteHeader(200)
+	json.NewEncoder(w).Encode(results)
+
+	//responseMovie(w, 200, results.Message())
 }
 func MovieAdd(w http.ResponseWriter, r *http.Request) {
 	decoder := json.NewDecoder(r.Body)
